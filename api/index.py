@@ -41,7 +41,8 @@ def get_bangla_date():
         'short_date': f"{to_bangla_number(bangla_day)} {bangla_month}, {to_bangla_number(bangla_year)}",
         'day_name': day_name,
         'time': time_12hr,
-        'greeting': greeting
+        'greeting': greeting,
+        'full_datetime': f"{day_name}, {to_bangla_number(bangla_day)} {bangla_month}, {to_bangla_number(bangla_year)} - {time_12hr}"
     }
 
 # ==================== HELPER FUNCTIONS ====================
@@ -54,7 +55,7 @@ def clean_text(text):
 def extract_keywords(text, n=5):
     words = re.findall(r'[\u0980-\u09FF]+', text)
     word_freq = Counter(words)
-    stopwords = {'এবং', 'হয়ে', 'হতে', 'থেকে', 'একটি', 'এই', 'ও', 'সে', 'তা', 'আমি', 'তুমি'}
+    stopwords = {'এবং', 'হয়ে', 'হতে', 'থেকে', 'একটি', 'এই', 'ও', 'সে', 'তা', 'আমি', 'তুমি', 'করে', 'করা', 'হয়', 'ছিল', 'হবে'}
     for stop in stopwords:
         word_freq.pop(stop, None)
     return [w for w, _ in word_freq.most_common(n)]
@@ -76,8 +77,8 @@ def summarize_text(text, ratio=0.3):
     return '। '.join(selected) + '।'
 
 def sentiment_analysis(text):
-    positive = {'ভালো', 'চমৎকার', 'সুন্দর', 'আনন্দ', 'খুশি', 'পছন্দ', 'সফল', 'জয়', 'প্রিয়'}
-    negative = {'খারাপ', 'মন্দ', 'দুঃখ', 'বেদনা', 'ঘৃণা', 'ব্যর্থ', 'হার', 'শোক', 'ক্ষতি'}
+    positive = {'ভালো', 'চমৎকার', 'সুন্দর', 'আনন্দ', 'খুশি', 'পছন্দ', 'সফল', 'জয়', 'প্রিয়', 'দারুণ', 'অসাধারণ'}
+    negative = {'খারাপ', 'মন্দ', 'দুঃখ', 'বেদনা', 'ঘৃণা', 'ব্যর্থ', 'হার', 'শোক', 'ক্ষতি', 'সমস্যা', 'ত্রুটি'}
     words = text.split()
     pos = sum(1 for w in words if w in positive)
     neg = sum(1 for w in words if w in negative)
@@ -124,19 +125,26 @@ async def summarizer(input_data: TextInput):
     return {
         "সারাংশ": summary,
         "মূল কীওয়ার্ড": ", ".join(keywords),
-        "কম্প্রেশন রেট": f"{(1 - len(summary)/len(text)) * 100:.1f}%"
+        "কম্প্রেশন রেট": f"{(1 - len(summary)/len(text)) * 100:.1f}%",
+        "মূল টেক্সটের দৈর্ঘ্য": f"{len(text)} অক্ষর",
+        "সারাংশের দৈর্ঘ্য": f"{len(summary)} অক্ষর"
     }
 
 # Tool 2: Sentiment Analysis
 @app.post("/api/sentiment")
 async def sentiment(input_data: TextInput):
     sentiment, emoji, pos, neg = sentiment_analysis(input_data.text)
-    return {"সেন্টিমেন্ট": f"{sentiment} {emoji}", "পজিটিভ স্কোর": pos, "নেগেটিভ স্কোর": neg}
+    return {
+        "সেন্টিমেন্ট": f"{sentiment} {emoji}",
+        "পজিটিভ স্কোর": pos,
+        "নেগেটিভ স্কোর": neg
+    }
 
 # Tool 3: Keyword Extractor
 @app.post("/api/keywords")
 async def keywords(input_data: TextInput):
-    return {"কীওয়ার্ড": extract_keywords(input_data.text, 7)}
+    keywords = extract_keywords(input_data.text, 7)
+    return {"কীওয়ার্ড": keywords}
 
 # Tool 4: Content Writer
 @app.post("/api/content-writer")
@@ -227,8 +235,7 @@ async def resume_parser(input_data: ResumeInput):
         "নাম": input_data.name,
         "ইমেইল": input_data.email,
         "দক্ষতা": skills_list,
-        "এটিএস স্কোর": f"{job_match}%",
-        "সাজেশন": "আরও কীওয়ার্ড যুক্ত করুন"
+        "এটিএস স্কোর": f"{job_match}%"
     }
 
 # Tool 11: Interview Preparation
@@ -250,7 +257,7 @@ async def learning_management(input_data: TextInput):
     summary = summarize_text(content)
     return {"পাঠের সারাংশ": summary, "মোট শব্দ": len(content.split()), "অগ্রগতি": f"{random.randint(50, 95)}%"}
 
-# ==================== HTML UI ====================
+# ==================== HTML UI (Client-side JavaScript with live time update) ====================
 
 html_content = """<!DOCTYPE html>
 <html lang="bn">
@@ -304,6 +311,7 @@ html_content = """<!DOCTYPE html>
             font-size: 11px;
             flex-wrap: wrap;
         }
+        .datetime-widget span { white-space: nowrap; }
         .container { max-width: 1400px; margin: 0 auto; padding: 15px; }
         .hero {
             background: rgba(255,255,255,0.95);
@@ -372,6 +380,7 @@ html_content = """<!DOCTYPE html>
         }
         .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; flex: 1; }
         .btn-primary:hover { transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-secondary { background: #f0f0f0; color: #333; }
         .btn-secondary:hover { background: #e0e0e0; }
         .result-area {
@@ -403,6 +412,11 @@ html_content = """<!DOCTYPE html>
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .error-box {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
         .footer { text-align: center; padding: 12px; color: rgba(255,255,255,0.7); font-size: 10px; }
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; }
@@ -421,10 +435,10 @@ html_content = """<!DOCTYPE html>
             <span class="logo-text">বাংলা এআই স্যুট</span>
         </div>
         <div class="datetime-widget" id="datetime-widget">
-            <span id="greeting">...</span>
-            <span id="day-name"></span>
-            <span id="bangla-date"></span>
-            <span id="time"></span>
+            <span id="greeting">শুভ সকাল</span>
+            <span id="day-name">সোমবার</span>
+            <span id="bangla-date">০১ বৈশাখ, ১৪৩০</span>
+            <span id="time">১২:০০:০০ AM</span>
         </div>
     </div>
 
@@ -441,7 +455,7 @@ html_content = """<!DOCTYPE html>
             <textarea id="input-text" placeholder="এখানে আপনার টেক্সট লিখুন..."></textarea>
             <div id="extra-inputs" class="extra-inputs"></div>
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="processText()"><i class="fas fa-play"></i> প্রসেস</button>
+                <button class="btn btn-primary" id="processBtn" onclick="processText()"><i class="fas fa-play"></i> প্রসেস</button>
                 <button class="btn btn-secondary" onclick="clearAll()"><i class="fas fa-trash"></i> ক্লিয়ার</button>
                 <button class="btn btn-secondary" onclick="loadExample()"><i class="fas fa-file-alt"></i> উদাহরণ</button>
             </div>
@@ -455,6 +469,49 @@ html_content = """<!DOCTYPE html>
     </div>
 
     <script>
+        // Live Time Update - প্রতি সেকেন্ডে আপডেট হবে
+        function updateLiveTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            const formattedMinutes = minutes.toString().padStart(2, '0');
+            const formattedSeconds = seconds.toString().padStart(2, '0');
+            const timeString = `${formattedHours}:${formattedMinutes}:${formattedSeconds} ${ampm}`;
+            document.getElementById('time').innerHTML = timeString;
+            
+            // শুভেচ্ছা আপডেট
+            if (hours < 12) {
+                document.getElementById('greeting').innerHTML = 'শুভ সকাল';
+            } else if (hours < 18) {
+                document.getElementById('greeting').innerHTML = 'শুভ বিকাল';
+            } else {
+                document.getElementById('greeting').innerHTML = 'শুভ রাত্রি';
+            }
+        }
+        
+        // Bangla Date আপডেট (প্রতি 5 মিনিটে)
+        async function updateBanglaDate() {
+            try {
+                const response = await fetch('/api/bangla-date');
+                const data = await response.json();
+                document.getElementById('day-name').innerHTML = data.day_name;
+                document.getElementById('bangla-date').innerHTML = data.short_date;
+            } catch(e) {
+                console.error('Date update error:', e);
+            }
+        }
+        
+        // প্রতি সেকেন্ডে সময় আপডেট হবে
+        setInterval(updateLiveTime, 1000);
+        updateLiveTime();
+        
+        // প্রতি 5 মিনিটে তারিখ আপডেট
+        updateBanglaDate();
+        setInterval(updateBanglaDate, 300000);
+        
         const tools = [
             { id: 'summarizer', icon: '📝', name: 'সামারাইজার', needExtra: false },
             { id: 'sentiment', icon: '😊', name: 'সেন্টিমেন্ট', needExtra: false },
@@ -462,7 +519,7 @@ html_content = """<!DOCTYPE html>
             { id: 'content-writer', icon: '✍️', name: 'কন্টেন্ট', needExtra: false },
             { id: 'email-response', icon: '📧', name: 'ইমেইল', needExtra: true, extraType: 'email' },
             { id: 'research-analyzer', icon: '🔬', name: 'রিসার্চ', needExtra: false },
-            { id: 'code-documentation', icon: '💻', name: 'কোড ডক', needExtra: false },
+            { id: 'code-documentation', icon: '💻', name: 'কোড', needExtra: false },
             { id: 'social-content', icon: '📱', name: 'সোশ্যাল', needExtra: false },
             { id: 'meeting-summarizer', icon: '📋', name: 'মিটিং', needExtra: false },
             { id: 'resume-parser', icon: '📄', name: 'রিজিউমে', needExtra: true, extraType: 'resume' },
@@ -472,31 +529,29 @@ html_content = """<!DOCTYPE html>
 
         let currentTool = tools[0];
 
-        async function updateDateTime() {
-            try {
-                const res = await fetch('/api/bangla-date');
-                const d = await res.json();
-                document.getElementById('greeting').innerHTML = d.greeting;
-                document.getElementById('day-name').innerHTML = d.day_name;
-                document.getElementById('bangla-date').innerHTML = d.short_date;
-                document.getElementById('time').innerHTML = d.time;
-            } catch(e) {}
-        }
-        updateDateTime();
-        setInterval(updateDateTime, 1000);
-
         function renderTools() {
             const grid = document.getElementById('tools-grid');
-            grid.innerHTML = tools.map(t => `
-                <div class="tool-card ${t.id === currentTool.id ? 'active' : ''}" onclick="selectTool('${t.id}')">
-                    <div class="tool-icon">${t.icon}</div>
-                    <div class="tool-name">${t.name}</div>
-                </div>
-            `).join('');
+            if (!grid) return;
+            grid.innerHTML = '';
+            for (let i = 0; i < tools.length; i++) {
+                const t = tools[i];
+                const activeClass = t.id === currentTool.id ? 'active' : '';
+                grid.innerHTML += `
+                    <div class="tool-card ${activeClass}" onclick="selectTool('${t.id}')">
+                        <div class="tool-icon">${t.icon}</div>
+                        <div class="tool-name">${t.name}</div>
+                    </div>
+                `;
+            }
         }
 
         function selectTool(toolId) {
-            currentTool = tools.find(t => t.id === toolId);
+            for (let i = 0; i < tools.length; i++) {
+                if (tools[i].id === toolId) {
+                    currentTool = tools[i];
+                    break;
+                }
+            }
             renderTools();
             document.getElementById('active-name').innerHTML = currentTool.name;
             document.getElementById('result-area').style.display = 'none';
@@ -532,8 +587,11 @@ html_content = """<!DOCTYPE html>
         async function processText() {
             const resultArea = document.getElementById('result-area');
             const resultContent = document.getElementById('result-content');
+            const processBtn = document.getElementById('processBtn');
+            
             resultArea.style.display = 'block';
             resultContent.innerHTML = '<div class="loader"></div> প্রসেসিং হচ্ছে...';
+            if (processBtn) processBtn.disabled = true;
             
             try {
                 let body = {};
@@ -559,16 +617,20 @@ html_content = """<!DOCTYPE html>
                         answer: document.getElementById('interview-answer')?.value || text || 'আমি একজন দক্ষ পেশাদার'
                     };
                 } else {
-                    if (!text.trim()) throw new Error('টেক্সট লিখুন');
+                    if (!text.trim()) {
+                        resultContent.innerHTML = '<div class="result-box error-box">❌ দয়া করে কিছু টেক্সট লিখুন</div>';
+                        if (processBtn) processBtn.disabled = false;
+                        return;
+                    }
                     body = { text: text };
                 }
                 
-                const res = await fetch(`/api/${toolId}`, {
+                const response = await fetch(`/api/${toolId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-                const data = await res.json();
+                const data = await response.json();
                 
                 let html = '';
                 for (const [key, val] of Object.entries(data)) {
@@ -584,19 +646,27 @@ html_content = """<!DOCTYPE html>
                 }
                 resultContent.innerHTML = html || '<div class="result-box">✅ সম্পন্ন!</div>';
             } catch(err) {
-                resultContent.innerHTML = `<div class="result-box" style="background:#f8d7da; border-left-color:#dc3545;">❌ ${err.message}</div>`;
+                resultContent.innerHTML = `<div class="result-box error-box">❌ ${err.message}</div>`;
+            } finally {
+                if (processBtn) processBtn.disabled = false;
             }
         }
 
         function clearAll() {
             document.getElementById('input-text').value = '';
             document.getElementById('result-area').style.display = 'none';
+            if (document.getElementById('interview-answer')) document.getElementById('interview-answer').value = '';
+            if (document.getElementById('resume-name')) document.getElementById('resume-name').value = '';
+            if (document.getElementById('resume-email')) document.getElementById('resume-email').value = '';
+            if (document.getElementById('resume-skills')) document.getElementById('resume-skills').value = '';
+            if (document.getElementById('resume-experience')) document.getElementById('resume-experience').value = '';
+            if (document.getElementById('resume-education')) document.getElementById('resume-education').value = '';
         }
 
         function loadExample() {
             const examples = {
-                summarizer: 'বাংলাদেশ একটি ছোট কিন্তু জনবহুল দেশ। এটি দক্ষিণ এশিয়ায় অবস্থিত। ঢাকা এর রাজধানী। এখানে অনেক প্রাকৃতিক সৌন্দর্য রয়েছে। সুন্দরবন বিশ্বের সবচেয়ে বড় ম্যানগ্রোভ বন। কক্সবাজার বিশ্বের দীর্ঘতম সমুদ্র সৈকত।',
-                sentiment: 'আপনার সার্ভিস খুব ভালো ছিল। দ্রুত ডেলিভারি এবং পেশাদার আচরণ সত্যিই চমৎকার।',
+                summarizer: 'বাংলাদেশ একটি ছোট কিন্তু জনবহুল দেশ। এটি দক্ষিণ এশিয়ায় অবস্থিত। ঢাকা এর রাজধানী। এখানে অনেক প্রাকৃতিক সৌন্দর্য রয়েছে। সুন্দরবন বিশ্বের সবচেয়ে বড় ম্যানগ্রোভ বন। কক্সবাজার বিশ্বের দীর্ঘতম সমুদ্র সৈকত। বাংলাদেশের অর্থনীতি দ্রুত বাড়ছে।',
+                sentiment: 'আপনার সার্ভিস খুব ভালো ছিল। দ্রুত ডেলিভারি এবং পেশাদার আচরণ সত্যিই চমৎকার। ধন্যবাদ!',
                 'code-documentation': 'def add_numbers(a, b):\\n    return a + b',
                 'email-response': 'আমি আপনার প্রোডাক্টটি কিনতে আগ্রহী। দয়া করে বিস্তারিত জানান।'
             };
@@ -605,7 +675,6 @@ html_content = """<!DOCTYPE html>
 
         renderTools();
         selectTool('summarizer');
-        loadExample();
     </script>
 </body>
 </html>

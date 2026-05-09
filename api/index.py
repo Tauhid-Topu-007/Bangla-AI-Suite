@@ -204,7 +204,7 @@ async def learning_management(input_data: TextInput):
     summary = summarize_text(content)
     return {"পাঠের সারাংশ": summary, "মোট শব্দ": len(content.split()), "অগ্রগতি": f"{random.randint(50, 95)}%"}
 
-# ==================== HTML UI ====================
+# ==================== HTML UI WITH DARK/LIGHT TOGGLE ====================
 
 html_content = """<!DOCTYPE html>
 <html lang="bn">
@@ -216,40 +216,159 @@ html_content = """<!DOCTYPE html>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Hind Siliguri', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height: 100vh; }
-        .header { background: rgba(255,255,255,0.95); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; position: sticky; top: 0; z-index: 100; }
+        
+        /* Dark Theme (Default) */
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        body.dark {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        }
+        
+        body.light {
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2, #f5f7fa);
+        }
+        
+        /* Header */
+        .header {
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        body.dark .header {
+            background: rgba(20, 20, 30, 0.95);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        body.light .header {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
         .logo { display: flex; align-items: center; gap: 10px; }
-        .logo-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite; }
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .logo-icon i { font-size: 24px; color: white; }
-        .logo-text { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .datetime-widget { background: linear-gradient(135deg, #667eea, #764ba2); padding: 6px 15px; border-radius: 30px; display: flex; align-items: center; gap: 12px; color: white; font-size: 11px; flex-wrap: wrap; }
+        
+        body.dark .logo-text { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #fff, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        body.light .logo-text { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        
+        /* Theme Toggle Button */
+        .theme-toggle {
+            width: 60px;
+            height: 30px;
+            background: rgba(100, 108, 255, 0.2);
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(100, 108, 255, 0.3);
+        }
+        .theme-toggle-slider {
+            width: 26px;
+            height: 26px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle-slider i { font-size: 14px; color: white; }
+        body.light .theme-toggle-slider { left: 30px; }
+        
+        .datetime-widget {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 6px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+        
         .container { max-width: 1400px; margin: 0 auto; padding: 15px; }
-        .hero { background: rgba(255,255,255,0.95); border-radius: 15px; padding: 15px; margin-bottom: 20px; text-align: center; }
-        .hero h1 { font-size: 20px; color: #1e3c72; margin-bottom: 5px; }
-        .hero p { font-size: 12px; color: #555; }
+        
+        body.dark .hero { background: rgba(255,255,255,0.95); }
+        body.light .hero { background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .hero { border-radius: 15px; padding: 15px; margin-bottom: 20px; text-align: center; }
+        body.dark .hero h1 { color: #1e3c72; }
+        body.light .hero h1 { color: #333; }
+        .hero h1 { font-size: 20px; margin-bottom: 5px; }
+        body.dark .hero p { color: #555; }
+        body.light .hero p { color: #666; }
+        .hero p { font-size: 12px; }
+        
         .tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .tool-card { background: rgba(255,255,255,0.95); border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; transition: all 0.3s; border: 2px solid transparent; }
+        
+        body.dark .tool-card { background: rgba(255,255,255,0.95); }
+        body.light .tool-card { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tool-card { border-radius: 12px; padding: 10px; cursor: pointer; text-align: center; transition: all 0.3s; border: 2px solid transparent; }
         .tool-card:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.1); }
         .tool-card.active { border-color: #667eea; background: linear-gradient(135deg, #fff, #f0f4ff); }
         .tool-icon { font-size: 24px; margin-bottom: 4px; }
-        .tool-name { font-size: 10px; font-weight: 700; color: #1e3c72; }
-        .main-panel { background: rgba(255,255,255,0.95); border-radius: 15px; padding: 18px; }
+        body.dark .tool-name { color: #1e3c72; }
+        body.light .tool-name { color: #333; }
+        .tool-name { font-size: 10px; font-weight: 700; }
+        
+        body.dark .main-panel { background: rgba(255,255,255,0.95); }
+        body.light .main-panel { background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .main-panel { border-radius: 15px; padding: 18px; }
         .panel-title { font-size: 18px; font-weight: 700; color: #667eea; margin-bottom: 12px; }
+        
         textarea { width: 100%; min-height: 140px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: monospace; font-size: 13px; resize: vertical; outline: none; }
+        body.dark textarea { background: rgba(10,10,15,0.5); color: white; }
+        body.light textarea { background: #fafafa; color: #333; }
         textarea:focus { border-color: #667eea; }
+        
         .extra-inputs { margin-top: 10px; }
         select, input { width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 12px; margin-bottom: 6px; }
+        body.dark select, body.dark input { background: rgba(10,10,15,0.5); color: white; border-color: #444; }
+        body.light select, body.light input { background: white; color: #333; }
+        
         .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
         .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; flex: 1; }
         .btn-secondary { background: #f0f0f0; color: #333; }
-        .result-area { margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 10px; display: none; max-height: 350px; overflow-y: auto; }
+        
+        body.dark .result-area { background: #f0f0f0; }
+        body.light .result-area { background: #f8f9fa; }
+        .result-area { margin-top: 15px; padding: 15px; border-radius: 10px; display: none; max-height: 350px; overflow-y: auto; }
         .result-box { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #667eea; font-size: 12px; line-height: 1.5; }
         .result-box strong { color: #667eea; display: block; margin-bottom: 5px; }
+        
         .loader { display: inline-block; width: 18px; height: 18px; border: 2px solid #f3f3f3; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .footer { text-align: center; padding: 12px; color: rgba(255,255,255,0.7); font-size: 10px; }
+        
+        .footer { text-align: center; padding: 12px; font-size: 10px; }
+        body.dark .footer { color: rgba(255,255,255,0.7); }
+        body.light .footer { color: #999; }
+        
         @media (max-width: 768px) {
             .header { flex-direction: column; text-align: center; }
             .tools-grid { grid-template-columns: repeat(3, 1fr); }
@@ -258,7 +377,7 @@ html_content = """<!DOCTYPE html>
         }
     </style>
 </head>
-<body>
+<body class="dark">
     <div class="header">
         <div class="logo">
             <div class="logo-icon"><i class="fas fa-brain"></i></div>
@@ -269,6 +388,11 @@ html_content = """<!DOCTYPE html>
             <span id="day-name"></span>
             <span id="bangla-date"></span>
             <span id="time"></span>
+        </div>
+        <div class="theme-toggle" onclick="toggleTheme()">
+            <div class="theme-toggle-slider">
+                <i class="fas fa-moon" id="theme-icon"></i>
+            </div>
         </div>
     </div>
 
@@ -293,10 +417,39 @@ html_content = """<!DOCTYPE html>
                 <div id="result-content"></div>
             </div>
         </div>
-        <div class="footer"><p><i class="fas fa-heart"></i> ১২টি এআই টুল | সম্পূর্ণ ফ্রি</p></div>
+        <div class="footer"><p><i class="fas fa-heart"></i> ১২টি এআই টুল | সম্পূর্ণ ফ্রি | বাংলায় এআই</p></div>
     </div>
 
     <script>
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (body.classList.contains('dark')) {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.remove('dark');
+            document.body.classList.add('light');
+            document.getElementById('theme-icon').classList.remove('fa-moon');
+            document.getElementById('theme-icon').classList.add('fa-sun');
+        }
+        
         // Live Time Update
         function updateLiveTime() {
             const now = new Date();
@@ -368,11 +521,11 @@ html_content = """<!DOCTYPE html>
             document.getElementById('extra-inputs').innerHTML = '';
             
             if (currentTool.extraType === 'email') {
-                document.getElementById('extra-inputs').innerHTML = `<select id="email-tone"><option value="professional">প্রোফেশনাল</option><option value="casual">ক্যাজুয়াল</option></select>`;
+                document.getElementById('extra-inputs').innerHTML = `<select id="email-tone"><option value="professional">📧 প্রোফেশনাল</option><option value="casual">💬 ক্যাজুয়াল</option></select>`;
             } else if (currentTool.extraType === 'resume') {
-                document.getElementById('extra-inputs').innerHTML = `<input type="text" id="resume-name" placeholder="নাম"><input type="email" id="resume-email" placeholder="ইমেইล"><input type="text" id="resume-skills" placeholder="দক্ষতা (কমা দিয়ে)"><textarea id="resume-experience" placeholder="কাজের অভিজ্ঞতা" rows="2"></textarea><textarea id="resume-education" placeholder="শিক্ষাগত যোগ্যতা" rows="2"></textarea>`;
+                document.getElementById('extra-inputs').innerHTML = `<input type="text" id="resume-name" placeholder="👤 নাম"><input type="email" id="resume-email" placeholder="📧 ইমেইল"><input type="text" id="resume-skills" placeholder="🔧 দক্ষতা (কমা দিয়ে)"><textarea id="resume-experience" placeholder="💼 কাজের অভিজ্ঞতা" rows="2"></textarea><textarea id="resume-education" placeholder="🎓 শিক্ষাগত যোগ্যতা" rows="2"></textarea>`;
             } else if (currentTool.extraType === 'interview') {
-                document.getElementById('extra-inputs').innerHTML = `<select id="interview-question"><option value="আপনি কে? আপনার পরিচয় দিন।">পরিচয় দিন</option><option value="আপনার কাজের অভিজ্ঞতা সম্পর্কে বলুন।">কাজের অভিজ্ঞতা</option><option value="আপনার শক্তি কি কি?">আপনার শক্তি</option></select><textarea id="interview-answer" placeholder="আপনার উত্তর লিখুন..." rows="3"></textarea>`;
+                document.getElementById('extra-inputs').innerHTML = `<select id="interview-question"><option value="আপনি কে? আপনার পরিচয় দিন।">🤝 পরিচয় দিন</option><option value="আপনার কাজের অভিজ্ঞতা সম্পর্কে বলুন।">💼 কাজের অভিজ্ঞতা</option><option value="আপনার শক্তি কি কি?">⭐ আপনার শক্তি</option></select><textarea id="interview-answer" placeholder="✍️ আপনার উত্তর লিখুন..." rows="3"></textarea>`;
             }
         }
 
@@ -438,15 +591,25 @@ html_content = """<!DOCTYPE html>
         function clearAll() {
             document.getElementById('input-text').value = '';
             document.getElementById('result-area').style.display = 'none';
+            if (document.getElementById('interview-answer')) document.getElementById('interview-answer').value = '';
+            if (document.getElementById('resume-name')) document.getElementById('resume-name').value = '';
+            if (document.getElementById('resume-email')) document.getElementById('resume-email').value = '';
+            if (document.getElementById('resume-skills')) document.getElementById('resume-skills').value = '';
+            if (document.getElementById('resume-experience')) document.getElementById('resume-experience').value = '';
+            if (document.getElementById('resume-education')) document.getElementById('resume-education').value = '';
         }
 
         function loadExample() {
             const examples = {
-                summarizer: 'বাংলাদেশ একটি ছোট কিন্তু জনবহুল দেশ। এটি দক্ষিণ এশিয়ায় অবস্থিত। ঢাকা এর রাজধানী। সুন্দরবন বিশ্বের সবচেয়ে বড় ম্যানগ্রোভ বন।',
-                sentiment: 'আপনার সার্ভিস খুব ভালো ছিল। দ্রুত ডেলিভারি চমৎকার!',
-                'code-documentation': 'def add(a,b): return a+b'
+                summarizer: 'বাংলাদেশ একটি ছোট কিন্তু জনবহুল দেশ। এটি দক্ষিণ এশিয়ায় অবস্থিত। ঢাকা এর রাজধানী। সুন্দরবন বিশ্বের সবচেয়ে বড় ম্যানগ্রোভ বন। কক্সবাজার বিশ্বের দীর্ঘতম সমুদ্র সৈকত।',
+                sentiment: 'আপনার সার্ভিস খুব ভালো ছিল। দ্রুত ডেলিভারি এবং পেশাদার আচরণ সত্যিই চমৎকার!',
+                'code-documentation': 'def add_numbers(a, b):\\n    return a + b',
+                'email-response': 'আমি আপনার প্রোডাক্টটি কিনতে আগ্রহী। দয়া করে বিস্তারিত জানান।'
             };
             document.getElementById('input-text').value = examples[currentTool.id] || examples.summarizer;
+            if (currentTool.id === 'interview' && document.getElementById('interview-answer')) {
+                document.getElementById('interview-answer').value = 'আমি একজন দক্ষ সফটওয়্যার ইঞ্জিনিয়ার। ৫ বছরের অভিজ্ঞতা আছে।';
+            }
         }
 
         renderTools();
